@@ -31,6 +31,7 @@ no_frauds = len(train_df[train_df['renewal'] == 1])
 non_fraud_indices = train_df[train_df['renewal'] == 0].index
 # Random sample non fraud indices
 random_indices = np.random.choice(non_fraud_indices, non_fraud_indices.shape, replace=False)
+# random_indices = np.random.choice(non_fraud_indices, no_frauds)
 # Find the indices of fraud samples
 fraud_indices = train_df[train_df['renewal'] == 1].index
 # Concat fraud indices with sample non-fraud ones
@@ -111,5 +112,5 @@ fs = f1_score(labels, train_prediction)
 print('-------------------------------------F1-Score------------------------------------')
 print(fs)
 print()
-print('-------------------------------Designed by Mehdi Etaati--------------------------')
+print('-------------------------------Designed by FARIMAN--------------------------')
 # this is it
