@@ -1,116 +1,117 @@
 # I'm ashamed for explain this part!!!!!!!
 import pandas as pd
 import numpy as np
-from sklearn.svm import LinearSVC
-import sklearn.model_selection as model
-from sklearn.metrics import confusion_matrix, f1_score
+import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import cross_val_score
+from sklearn.metrics import mean_squared_error
 
 np.set_printoptions(threshold=np.inf)
 
-# read csv files as DataFrame
+# Read csv files as Data Frame
 test_df = pd.read_csv('assets/Test.csv')
 train_df = pd.read_csv('assets/Train.csv')
 
-# Ooooops, your data contains non-numeric values, therefore, i have to clean it. let's change it to Dataset with not numeric values
+# Let's look at structure of our data
+print('--------------------------------Structure of our Data--------------------------------')
+print(train_df.info())
+print()
+
+# Now...
+print('----------------------------------Describe our Data----------------------------------')
+print(train_df.describe())
+print()
+# Visualize our data
+print('-------------------------------Visualize Data ( See plot )---------------------------')
+train_df.hist(bins=50, figsize=(20, 15))
+plt.show()
+print()
+
+# Um, our data contains none numeric values, therefore, i have to clean it.
+# let's change it to Data Frame with none numeric values
+# Step one for clean data.
 test_df['residence_area_type'] = test_df['residence_area_type'].astype('category')
 test_df['sourcing_channel'] = test_df['sourcing_channel'].astype('category')
 train_df['residence_area_type'] = train_df['residence_area_type'].astype('category')
 train_df['sourcing_channel'] = train_df['sourcing_channel'].astype('category')
 
-# step two for clean data. at this part, i retrieve those columns
+# Step two for clean data. at this part, i retrieve those columns
 category_columns = test_df.select_dtypes(['category']).columns
 
-# convert to numeric
+# Step three for clean data. convert to numeric
 test_df[category_columns] = test_df[category_columns].apply(lambda x: x.cat.codes)
 train_df[category_columns] = train_df[category_columns].apply(lambda x: x.cat.codes)
 
-# no! your data is imbalanced in class
+# No! our data is imbalanced in class
 # Find Number of samples which are Fraud
 no_frauds = len(train_df[train_df['renewal'] == 1])
 # Get indices of non fraud samples
 non_fraud_indices = train_df[train_df['renewal'] == 0].index
 # Random sample non fraud indices
 random_indices = np.random.choice(non_fraud_indices, non_fraud_indices.shape, replace=False)
-# random_indices = np.random.choice(non_fraud_indices, no_frauds)
 # Find the indices of fraud samples
 fraud_indices = train_df[train_df['renewal'] == 1].index
 # Concat fraud indices with sample non-fraud ones
 under_sample_indices = np.concatenate([fraud_indices, random_indices])
-# Get Balance Dataframe
+# Get Balance Data frame
 under_sample = train_df.loc[under_sample_indices]
 
-# convert Datafarme to Numpy Array for using in Algorithm
+# Convert Data frame to Numpy Array for using in Algorithm
 test_features = test_df.values
 train = under_sample.values
 
-# split train and test array to label and features array
+# Split train array to label and features array
 train_features = train[:, 0:11]
 train_labels = train[:, 11:]
 
-# print arrays
-# print('------------------------------------Train-----------------------------------')
-# print()
-# print('-----------------------------------Features---------------------------------')
-# print(train_features)
-# print('------------------------------------Labels----------------------------------')
-# print(train_labels)
-# print()
-# print()
-# print()
-# print('------------------------------------Test-----------------------------------')
-# print()
-# print('-----------------------------------Features---------------------------------')
-# print(test_features)
-
-
-# blimey, your data contains NAN value. How would! How would it be! anyway... lets get rid of them...
+# Blimey, our data contains NAN value. How would! How would it be! anyway... lets get rid of them...
 # x = np.any(np.isnan(train_features))
 # y = np.all(np.isfinite(train_features))
 train_features[np.isnan(train_features)] = 0
 test_features[np.isnan(test_features)] = 0
 
-# for review
-# print(train_features.shape)
-# print(test_features.shape)
-
 # Before use... i should flat label array
 labels = np.array(train_labels).flatten()
 
-# again... for review
-# print(train_features.shape)
-# print(test_features.shape)
+# It's time to predict - use Linear Regression
+lin_reg = LinearRegression()
+lin_reg.fit(train_features, labels)
+prediction = lin_reg.predict(test_features)
+print('------------------------------------Prediction Result--------------------------------------')
+print(prediction)
+print()
 
-# Blah Blah Blah...
-# it's time to define SVM CLASSIFIER
-svm_clf = LinearSVC(random_state=0, tol=1e-5)
-# train phase
-svm_clf.fit(train_features, labels)
-# prediction phase
-predicted = svm_clf.predict(test_features)
-number_of_zero = predicted[predicted == 0]
-number_of_one = predicted[predicted == 1]
-# print(svm_clf.n_iter_)
-print('-----------------------------------Prediction-------------------------------------')
+print('-----------------------------------------Accuracy------------------------------------------')
+prediction = lin_reg.predict(train_features)
+lin_mse = mean_squared_error(labels, prediction)
+lin_rmse = np.sqrt(lin_mse)
+print(lin_rmse)
 print()
-print(number_of_one.shape)
-print(number_of_zero.shape)
+
+print('----------------------------------------Accuracy CV----------------------------------------')
+lin_scores = cross_val_score(lin_reg, train_features, labels, scoring="neg_mean_squared_error", cv=10)
+lin_rmse_scores = np.sqrt(-lin_scores)
+print("Scores:", lin_rmse_scores)
+print("Mean:", lin_rmse_scores.mean())
+print("Standard deviation:", lin_rmse_scores.std())
 print()
-print()
-print('------------------------------------Measures-------------------------------------')
-# finally it's time to measure accuracy
-# Cross Validation Accuracy
-print()
-print('-------------------------------------Accuracy------------------------------------')
-accuracy = model.cross_val_score(svm_clf, train_features, labels, cv=3, scoring="accuracy")
-print(accuracy)
-# Confusion Matrix
-train_prediction = model.cross_val_predict(svm_clf, train_features, labels, cv=3)
-cm = confusion_matrix(labels, train_prediction)
-print('-------------------------------------Accuracy------------------------------------')
-print(cm)
-fs = f1_score(labels, train_prediction)
-print('-------------------------------------F1-Score------------------------------------')
-print(fs)
-print()
-print('-------------------------------Designed by FARIMAN--------------------------')
-# this is it
+
+# print('-----------------------------------Accuracy on predictions---------------------------------')
+# final_mse = mean_squared_error(test_labels, prediction)
+# final_rmse = np.sqrt(final_mse)
+# print()
+
+# So far so good but...
+# Please note that i can do some work for tune model for example :
+# Visualize data in detail
+# Calculate correlation matrix
+# Combine attribute
+# Transforming on data
+# More cleaning data
+# Feature scaling
+# Search for getting best Hyper Parameter
+# Use other algorithms
+
+print('-----------------------Designed by Mehdi Etaati---------------------------')
+
+
