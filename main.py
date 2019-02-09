@@ -10,6 +10,7 @@ np.set_printoptions(threshold=np.inf)
 
 # Read csv files as Data Frame
 test_df = pd.read_csv('assets/Test.csv')
+main_test_df = test_df
 train_df = pd.read_csv('assets/Train.csv')
 
 # Let's look at structure of our data
@@ -76,9 +77,16 @@ labels = np.array(train_labels).flatten()
 # It's time to predict - use Linear Regression
 lin_reg = LinearRegression()
 lin_reg.fit(train_features, labels)
-prediction = lin_reg.predict(test_features)
+test_prediction = lin_reg.predict(test_features)
+
+print('---------------------------Generating result on new cvs file-------------------------------')
+main_test_df.insert(11,'prediction_result', test_prediction)
+main_test_df.to_csv('assets/Test_with_result.csv')
+print('--------------------------------------file Generated---------------------------------------')
+
 print('------------------------------------Prediction Result--------------------------------------')
-print(prediction)
+print(test_prediction.shape)
+print(test_prediction)
 print()
 
 print('-----------------------------------------Accuracy------------------------------------------')
